@@ -22,9 +22,10 @@ def get_image_data(im_dir):
         im_list = [im_dir]
     else:
         im_list = list(glob.glob(im_dir + "/**/*.JPG",recursive=True))
+    
     images = [imread(im_name) for im_name in im_list]
     # Load images and store in list 
-    im_list = list(im[im.find('data\\') + 6:] for im in im_list)
+    im_list = list(im[im.find('data\\')+5:] for im in im_list)
     im_list = list(im.split('\\') + [images[idx]] for idx, im in enumerate(im_list))
     images = pd.DataFrame(im_list,columns = ['Date','treatment','Image'])
     
