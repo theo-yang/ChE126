@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[5]:
-
-
 def get_image_data(im_dir):
     '''
     INPUT: name of directory containing images (str), with sub-directories separated by '\\'
@@ -49,9 +46,6 @@ def get_image_data(im_dir):
     return data_arranged
 
 
-# In[9]:
-
-
 def plate_edge_detector(image,sigma=5,low_threshold=7,high_threshold=40):
     '''
     INPUT: - Plate Image
@@ -66,9 +60,6 @@ def plate_edge_detector(image,sigma=5,low_threshold=7,high_threshold=40):
     
     image = img_as_ubyte(image[:,:,0])
     return canny(image,sigma=sigma, low_threshold=low_threshold, high_threshold=high_threshold)
-
-
-# In[15]:
 
 
 def define_circular_roi(image,edge):
