@@ -155,3 +155,104 @@ def show_CFUs(cropped_im,blobs_log,figsize=(10,10)):
         c = plt.Circle((x,y), r, color = 'red',linewidth=2,fill=False)
         ax.add_artist(c)
     plt.show()
+
+def colony_coordinates(image_path):
+    '''
+    INPUTS: - Image Path
+    OUPUTS: - List of coordinates of user-selected colonies
+    Attribution: This function is a modified version of record_clics() from the bebi103 module. See github.com/justinbois/bebi103 for documentation
+    Modules: bokeh, skimage, numpy
+    
+    '''
+    # Imports
+    import bokeh
+    import bokeh.plotting
+    from skimage.io import imread
+    import numpy as np
+    
+    
+    points_source = bokeh.models.ColumnDataSource({"x": [], "y": []})
+    def modify_doc(doc,frame_height=400):
+        frame = imread(image_path)
+        M, N, _ = frame.shape
+        img = np.empty((M, N), dtype=np.uint32)
+        view = img.view(dtype=np.uint8).reshape((M, N, 4))
+        view[:,:,0] = frame[:,:,0] # copy red channel
+        view[:,:,1] = frame[:,:,1] # copy blue channel
+        view[:,:,2] = frame[:,:,2] # copy green channel
+        view[:,:,3] = 255
+        img = img[::-1]
+        frame_width = int(frame_height * N/M)
+        p = bokeh.plotting.figure(
+                frame_height=frame_height,
+                frame_width=frame_width,
+                tools="pan,box_zoom,wheel_zoom,save,reset")
+        p.image_rgba(image=[img],x=0, y=0, dw=frame_width,dh=frame_height)
+
+        view = bokeh.models.CDSView(source=points_source)
+
+        renderer = p.scatter(
+            x="x",
+            y="y",
+            source=points_source,
+            view=view,
+            color='red',
+            size=3,
+        )
+
+        columns = [
+            bokeh.models.TableColumn(field="x", title="x"),
+            bokeh.models.TableColumn(field="y", title="y"),
+        ]
+
+        table = bokeh.models.DataTable(
+            source=points_source, columns=columns, editable=True, height=200
+        )
+
+        draw_tool = bokeh.models.PointDrawTool(renderers=[renderer])
+        p.add_tools(draw_tool)
+        p.add_tools(bokeh.models.CrosshairTool(line_alpha=.5))
+        p.toolbar.active_tap = draw_tool
+
+        doc.add_root(bokeh.layouts.column(p, table))
+    
+    bokeh.io.show(modify_doc, notebook_url="localhost:8888")
+    return points_source
+
+def colony_dists(coordinates,sample_name,dilution):
+    '''
+    Computes Distances between CFUs and wood/pencil substrates
+    INPUT: - Nx2 numpy array of coordinates, where the first two coordinates are wood and pencil shavings respectively
+           - sample name (str) and -log2(dilution) (int)
+    OUTPUT: Distances between CFU and each shaving as a pandas DataFrame
+    modules: numpy, pandas
+
+    '''
+    
+    # Imports
+    import numpy as np
+    import pandas as pd
+    
+    num_points = len(coordinates[:,0])
+    num_colonies = num_points - 2
+    
+    wood = coordinates[0,:]
+    pencil = coordinates[1,:]
+    
+    # Find Distances
+    def distance(x):
+        return [np.sqrt((x[0] - wood[0]) ** 2 + (x[1] - wood[1]) ** 2),np.sqrt((x[0] - pencil[0]) ** 2 + (x[1] - pencil[1]) ** 2)]
+    
+    dists = np.apply_along_axis( distance, axis=1, arr=coordinates)
+    
+    # Distance between shavings
+    substrate_dist = distance(wood)[1]
+    
+    # Assemble DataFrame
+    label = np.array([[sample_name]*num_points]).T
+    label[0] = 'wood'
+    label[1] = 'pencil'
+    dilution = np.array([[dilution]*num_points]).T
+    
+    return pd.DataFrame(np.concatenate((label,dilution,coordinates,dists),axis=1),columns=['sample','-Log2(dilution)','x','y','Dist (wood)','Dist (pencil)'])
+    
