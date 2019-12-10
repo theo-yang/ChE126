@@ -19,7 +19,8 @@ def get_image_data(im_dir):
         im_list = [im_dir]
     else:
         im_list = list(glob.glob(im_dir + "/**/*.JPG",recursive=True))
-    
+    # Remove wood agar assay pics taken on 12/02/19
+    im_list = [ x for x in im_list if "120219" not in x ]
     images = [imread(im_name) for im_name in im_list]
     # Load images and store in list 
     im_list = list(im[im.find('data\\')+5:] for im in im_list)
